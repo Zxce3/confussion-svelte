@@ -1,2 +1,12 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<script lang="ts">
+	import EternalConfusion from '$lib/EternalConfusion.svelte';
+</script>
+
+<svelte:head>
+	<title>Eternal Confusion</title>
+	<meta name="description" content="A mind-bending puzzle game that will challenge your perception" />
+</svelte:head>
+
+<main class="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+	<EternalConfusion />
+</main>
