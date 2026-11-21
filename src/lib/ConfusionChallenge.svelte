@@ -1,54 +1,36 @@
 <script lang="ts">
-	import type { Challenge } from '$lib/challenges';
-	import { getRandomChallenge, getRandomChallengeByDifficulty, shuffleChallenges, allChallenges } from '$lib/challenges';
+	import type { Challenge } from './challenges';
+	import { getChallengesByDifficulty, shuffleChallenges, allChallenges } from './challenges';
 
 	let { 
 		level, 
 		challengeType, 
 		onComplete, 
 		onFailed 
-	} = $props<{
+	}: {
 		level: number;
 		challengeType: number;
 		onComplete: (points: number) => void;
 		onFailed: () => void;
-	}>();
+	} = $props();
 	
 	let userAnswer = $state('');
 	let selectedOption = $state(-1);
 	let draggedItems = $state<string[]>([]);
 	let isAnswering = $state(false);
 
-	// Generate shuffled challenges for variety
-	let shuffledChallenges = $state<Challenge[]>([]);
-	
-	// Initialize shuffled challenges
-	$effect(() => {
-		if (shuffledChallenges.length === 0) {
-			shuffledChallenges = shuffleChallenges(allChallenges);
-		}
+	// Pool of challenges for the current difficulty, shuffled once per level
+	let difficulty = $derived<'easy' | 'medium' | 'hard'>(
+		level >= 10 ? 'hard' : level >= 5 ? 'medium' : 'easy'
+	);
+	let pool = $derived.by(() => {
+		const matching = shuffleChallenges(getChallengesByDifficulty(difficulty));
+		return matching.length > 0 ? matching : shuffleChallenges(allChallenges);
 	});
-	
-	// Get current challenge based on difficulty and randomization
-	let currentChallenge = $derived((() => {
-		if (shuffledChallenges.length === 0) {
-			return getRandomChallenge(); // Fallback
-		}
-		
-		// Determine difficulty based on level
-		let difficulty: 'easy' | 'medium' | 'hard' = 'easy';
-		if (level >= 5) difficulty = 'medium';
-		if (level >= 10) difficulty = 'hard';
-		
-		// Try to get a challenge of appropriate difficulty
-		try {
-			return getRandomChallengeByDifficulty(difficulty);
-		} catch {
-			// Fallback to using challengeType index
-			return shuffledChallenges[challengeType % shuffledChallenges.length];
-		}
-	})());
-	
+
+	// Cycle through the pool so every challenge differs from the last
+	let currentChallenge = $derived(pool[challengeType % pool.length]);
+
 	function submitAnswer() {
 		if (isAnswering) return;
 		isAnswering = true;
@@ -100,7 +82,7 @@
 	});
 </script>
 
-<div class="bg-black bg-opacity-70 rounded-lg p-8 text-white min-h-96">
+<div class="bg-black/70 rounded-lg p-8 text-white min-h-96">
 	<div class="text-center mb-8">
 		<h2 class="text-2xl font-bold mb-4 text-yellow-400">
 			Challenge #{challengeType + 1} - Level {level}

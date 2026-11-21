@@ -1,7 +1,7 @@
 <script lang="ts">
-	let { onStart } = $props<{
+	let { onStart }: {
 		onStart: () => void;
-	}>();
+	} = $props();
 	
 	let glitchActive = $state(false);
 	
@@ -20,7 +20,7 @@
 
 <div class="flex flex-col items-center justify-center min-h-screen text-white p-8">
 	<div class="text-center max-w-2xl">
-		<h1 class="text-6xl md:text-8xl font-bold mb-8 {glitchActive ? 'animate-pulse text-red-500' : 'text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600'}">
+		<h1 class="text-6xl md:text-8xl font-bold mb-8 {glitchActive ? 'animate-pulse text-red-500' : 'text-transparent bg-clip-text bg-linear-to-r from-purple-400 to-pink-600'}">
 			ETERNAL
 		</h1>
 		<h2 class="text-4xl md:text-6xl font-bold mb-12 {glitchActive ? 'animate-bounce text-green-400' : 'text-yellow-400'}">
@@ -41,7 +41,7 @@
 		
 		<button 
 			onclick={onStart}
-			class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 
+			class="bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 
 			       text-white font-bold py-4 px-8 rounded-lg text-xl transition-all duration-300 
 			       transform hover:scale-105 hover:shadow-2xl shadow-lg"
 		>
