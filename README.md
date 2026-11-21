@@ -76,4 +76,4 @@ Add an entry to `src/lib/moreChallenges.ts` (or a generator to `src/lib/generato
 
 ## License
 
-No license file is included yet.
+[MIT](LICENSE) © 2026 Memet Zx
