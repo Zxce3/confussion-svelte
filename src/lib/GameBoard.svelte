@@ -1,15 +1,8 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import ConfusionChallenge from './ConfusionChallenge.svelte';
-	
-	let { 
-		level, 
-		score, 
-		lives, 
-		confusionLevel, 
-		maxConfusion,
-		onLoseLife,
-		onAddConfusion 
-	}: {
+
+	let { level, score, lives, confusionLevel, maxConfusion, onLoseLife, onAddConfusion }: {
 		level: number;
 		score: number;
 		lives: number;
@@ -18,104 +11,142 @@
 		onLoseLife: () => void;
 		onAddConfusion: (amount: number) => void;
 	} = $props();
-	
+
+	let roundTime = $derived(Math.max(15, 30 - level * 2));
 	let timeLeft = $state(30);
-	let currentChallenge = $state(0);
-	let isFlashing = $state(false);
-	
-	// Timer effect
+	let round = $state(0);
+	let paused = $state(false);
+	let lastLives = 0;
+	let hurt = $state(false);
+	lastLives = untrack(() => lives);
+
+	// Countdown: one tick per second, paused while an answer is being shown
 	$effect(() => {
+		if (paused) return;
 		if (timeLeft <= 0) {
 			onLoseLife();
-			timeLeft = 30;
+			round++;
+			timeLeft = roundTime;
 			return;
 		}
-		
-		const timer = setTimeout(() => {
-			timeLeft--;
-			if (timeLeft <= 5) {
-				isFlashing = true;
-				setTimeout(() => isFlashing = false, 500);
-			}
-		}, 1000);
-		
-		return () => clearTimeout(timer);
+		const id = setTimeout(() => timeLeft--, 1000);
+		return () => clearTimeout(id);
 	});
-	
+
+	// Flash the screen edge when a life is lost
+	$effect(() => {
+		if (lives < lastLives) {
+			hurt = true;
+			setTimeout(() => (hurt = false), 500);
+		}
+		lastLives = lives;
+	});
+
 	// Stable background particles (regenerated only when the level changes)
 	let particles = $derived(
-		Array.from({ length: level * 2 }, () => ({
+		Array.from({ length: 10 + level * 2 }, () => ({
 			x: Math.random() * 100,
 			y: Math.random() * 100,
 			delay: Math.random() * 3,
-			dur: 2 + Math.random() * 2
+			dur: 2 + Math.random() * 3
 		}))
 	);
 
-	// Progress percentage
-	let progressPercent = $derived((confusionLevel / maxConfusion) * 100);
-	
-	function handleChallengeComplete(points: number) {
+	let progress = $derived(Math.min(100, (confusionLevel / maxConfusion) * 100));
+	let timePct = $derived(Math.min(100, (timeLeft / roundTime) * 100));
+	let urgent = $derived(timeLeft <= 5);
+
+	function handleComplete(points: number) {
 		onAddConfusion(points);
-		currentChallenge = (currentChallenge + 1) % 5;
-		timeLeft = Math.max(15, 30 - level * 2); // Decrease time as level increases
+		round++;
+		timeLeft = roundTime;
+		paused = false;
 	}
-	
-	function handleChallengeFailed() {
+
+	function handleFailed() {
 		onLoseLife();
-		currentChallenge = (currentChallenge + 1) % 5;
-		timeLeft = Math.max(15, 30 - level * 2);
+		round++;
+		timeLeft = roundTime;
+		paused = false;
 	}
 </script>
 
-<div class="relative w-full min-h-screen p-4 text-white">
+<div class="relative min-h-dvh">
+	<!-- Edge flash on damage -->
+	<div
+		class="pointer-events-none fixed inset-0 z-20 transition-opacity duration-500 {hurt ? 'opacity-100' : 'opacity-0'}"
+		style="box-shadow: inset 0 0 160px 20px rgb(244 63 94 / 0.55)"
+		aria-hidden="true"
+	></div>
+
 	<!-- HUD -->
-	<div class="fixed top-0 left-0 right-0 z-10 bg-black/50 p-4">
-		<div class="flex justify-between items-center max-w-6xl mx-auto">
-			<div class="flex space-x-6">
-				<div class="text-lg font-bold">Level: <span class="text-yellow-400">{level}</span></div>
-				<div class="text-lg font-bold">Score: <span class="text-green-400">{score}</span></div>
-				<div class="text-lg font-bold">Lives: 
-					<span class="text-red-400">
-						{'❤️'.repeat(lives)}{'🖤'.repeat(3 - lives)}
-					</span>
+	<header class="glass fixed inset-x-3 top-3 z-10 mx-auto max-w-4xl rounded-2xl px-4 py-3 sm:px-6">
+		<div class="flex items-center justify-between gap-4">
+			<div class="flex items-center gap-5 sm:gap-8">
+				<div>
+					<div class="text-[10px] tracking-widest text-violet-200/50 uppercase">Level</div>
+					<div class="font-display text-xl leading-none font-bold text-amber-300 tabular-nums">{level}</div>
+				</div>
+				<div>
+					<div class="text-[10px] tracking-widest text-violet-200/50 uppercase">Score</div>
+					<div class="font-display text-xl leading-none font-bold text-emerald-300 tabular-nums">{score.toLocaleString()}</div>
+				</div>
+				<div aria-label="{lives} lives remaining">
+					<div class="text-[10px] tracking-widest text-violet-200/50 uppercase">Lives</div>
+					<div class="flex gap-0.5 text-lg leading-none">
+						{#each [0, 1, 2] as i}
+							<span class="transition-all duration-300 {i < lives ? '' : 'scale-75 opacity-25 grayscale'}">❤️</span>
+						{/each}
+					</div>
 				</div>
 			</div>
-			
-			<div class="text-lg font-bold {isFlashing ? 'text-red-500 animate-pulse' : 'text-white'}">
-				Time: {timeLeft}s
+
+			<div class="text-right">
+				<div class="text-[10px] tracking-widest text-violet-200/50 uppercase">Time</div>
+				<div class="font-display text-2xl leading-none font-bold tabular-nums {urgent ? 'animate-pulse text-rose-400' : 'text-white'}">
+					{timeLeft}s
+				</div>
 			</div>
 		</div>
-		
-		<!-- Confusion progress bar -->
-		<div class="mt-2 max-w-6xl mx-auto">
-			<div class="text-sm mb-1">Confusion Level: {confusionLevel}/{maxConfusion}</div>
-			<div class="w-full bg-gray-700 rounded-full h-3">
-				<div 
-					class="bg-linear-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-300"
-					style="width: {progressPercent}%"
+
+		<!-- Timer bar -->
+		<div class="mt-3 h-1 w-full overflow-hidden rounded-full bg-white/10">
+			<div
+				class="h-full rounded-full transition-[width] duration-1000 ease-linear {urgent ? 'bg-rose-500' : 'bg-sky-400'}"
+				style="width: {timePct}%"
+			></div>
+		</div>
+
+		<!-- Level progress -->
+		<div class="mt-2 flex items-center gap-3">
+			<div class="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
+				<div
+					class="h-full rounded-full bg-linear-to-r from-violet-500 via-fuchsia-500 to-pink-500 transition-[width] duration-500"
+					style="width: {progress}%"
 				></div>
 			</div>
+			<span class="text-[11px] text-violet-200/60 tabular-nums">{confusionLevel}/{maxConfusion}</span>
 		</div>
-	</div>
-	
-	<!-- Main game area -->
-	<div class="pt-24 flex items-center justify-center min-h-screen">
-		<div class="w-full max-w-4xl">
-			<ConfusionChallenge 
+	</header>
+
+	<!-- Challenge -->
+	<div class="mx-auto flex min-h-dvh max-w-3xl items-center justify-center px-4 pt-36 pb-10">
+		{#key round}
+			<ConfusionChallenge
 				{level}
-				challengeType={currentChallenge}
-				onComplete={handleChallengeComplete}
-				onFailed={handleChallengeFailed}
+				challengeType={round}
+				onLock={() => (paused = true)}
+				onComplete={handleComplete}
+				onFailed={handleFailed}
 			/>
-		</div>
+		{/key}
 	</div>
-	
-	<!-- Background effects -->
-	<div class="fixed inset-0 pointer-events-none overflow-hidden">
+
+	<!-- Ambient particles -->
+	<div class="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
 		{#each particles as p}
-			<div 
-				class="absolute w-1 h-1 bg-white rounded-full opacity-30 animate-ping"
+			<div
+				class="absolute size-1 animate-ping rounded-full bg-white opacity-20"
 				style="left: {p.x}%; top: {p.y}%; animation-delay: {p.delay}s; animation-duration: {p.dur}s;"
 			></div>
 		{/each}

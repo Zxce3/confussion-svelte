@@ -10,6 +10,15 @@
 	let lives = $state(3);
 	let confusionLevel = $state(0);
 	
+	// Personal best, persisted when storage is available
+	let best = $state(0);
+	let isNewBest = $state(false);
+	$effect(() => {
+		try {
+			best = Number(localStorage.getItem('eternal-confusion-best')) || 0;
+		} catch {}
+	});
+
 	// Derived values
 	let maxConfusion = $derived(level * 10);
 	let isGameActive = $derived(gameState === 'playing');
@@ -32,24 +41,29 @@
 		lives--;
 		if (lives <= 0) {
 			gameState = 'gameOver';
+			isNewBest = score > best;
+			if (isNewBest) {
+				best = score;
+				try {
+					localStorage.setItem('eternal-confusion-best', String(score));
+				} catch {}
+			}
 		}
 	}
 	
 	function addConfusion(amount: number) {
+		score += amount;
 		confusionLevel += amount;
 		if (confusionLevel >= maxConfusion) {
 			nextLevel();
 		}
 	}
 	
-	function resetGame() {
-		gameState = 'start';
-	}
 </script>
 
-<div class="relative w-full min-h-screen overflow-hidden">
+<div class="relative w-full min-h-dvh overflow-hidden">
 	{#if gameState === 'start'}
-		<StartScreen onStart={startGame} />
+		<StartScreen onStart={startGame} {best} />
 	{:else if gameState === 'playing'}
 		<GameBoard 
 			{level} 
@@ -64,7 +78,9 @@
 		<GameOverScreen 
 			{score} 
 			{level} 
-			onRestart={resetGame} 
+			{best}
+			{isNewBest}
+			onRestart={startGame} 
 		/>
 	{/if}
 </div>

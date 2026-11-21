@@ -1,65 +1,58 @@
 <script lang="ts">
-	let { onStart }: {
-		onStart: () => void;
-	} = $props();
-	
-	let glitchActive = $state(false);
-	
-	// Create a glitch effect every few seconds
+	let { onStart, best = 0 }: { onStart: () => void; best?: number } = $props();
+
+	let glitch = $state(false);
 	$effect(() => {
-		const interval = setInterval(() => {
-			glitchActive = true;
-			setTimeout(() => {
-				glitchActive = false;
-			}, 200);
-		}, 3000);
-		
-		return () => clearInterval(interval);
+		const id = setInterval(() => {
+			glitch = true;
+			setTimeout(() => (glitch = false), 300);
+		}, 3500);
+		return () => clearInterval(id);
 	});
+
+	const features = [
+		{ icon: '🧠', title: 'Bend perception', text: 'Stroop traps, paradoxes and riddles' },
+		{ icon: '⏱️', title: 'Beat the clock', text: 'Less time as the levels climb' },
+		{ icon: '❤️', title: 'Three lives', text: 'Wrong answers and timeouts cost one' }
+	];
 </script>
 
-<div class="flex flex-col items-center justify-center min-h-screen text-white p-8">
-	<div class="text-center max-w-2xl">
-		<h1 class="text-6xl md:text-8xl font-bold mb-8 {glitchActive ? 'animate-pulse text-red-500' : 'text-transparent bg-clip-text bg-linear-to-r from-purple-400 to-pink-600'}">
-			ETERNAL
+<svelte:window onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onStart())} />
+
+<section class="flex min-h-dvh flex-col items-center justify-center px-5 py-12 text-center">
+	<div class="animate-rise max-w-2xl">
+		<span class="glass mb-8 inline-block rounded-full px-4 py-1.5 text-xs font-medium tracking-[0.25em] text-violet-200 uppercase">
+			A puzzle of perception
+		</span>
+
+		<h1 class="font-display text-6xl leading-[0.95] font-bold tracking-tight sm:text-8xl {glitch ? 'animate-glitch' : ''}">
+			<span class="text-gradient animate-shimmer block">Eternal</span>
+			<span class="block text-white">Confusion</span>
 		</h1>
-		<h2 class="text-4xl md:text-6xl font-bold mb-12 {glitchActive ? 'animate-bounce text-green-400' : 'text-yellow-400'}">
-			CONFUSION
-		</h2>
-		
-		<p class="text-lg md:text-xl mb-8 text-gray-300 leading-relaxed">
-			Welcome to a world where nothing is as it seems. Navigate through mind-bending puzzles,
-			solve impossible riddles, and survive the eternal confusion that awaits you.
+
+		<p class="mx-auto mt-8 max-w-lg text-base leading-relaxed text-violet-100/70 sm:text-lg">
+			Nothing is quite what it seems. Solve impossible puzzles before time runs out and survive
+			as long as you can.
 		</p>
-		
-		<div class="space-y-4 mb-12">
-			<p class="text-sm text-gray-400">🧠 Challenge your perception</p>
-			<p class="text-sm text-gray-400">🌀 Reality will shift around you</p>
-			<p class="text-sm text-gray-400">⚡ Quick thinking required</p>
-			<p class="text-sm text-gray-400">💀 Three lives to survive</p>
+
+		<div class="mt-10 grid gap-3 text-left sm:grid-cols-3">
+			{#each features as f, i}
+				<div class="glass animate-rise rounded-2xl p-4" style="animation-delay:{150 + i * 90}ms">
+					<div class="text-2xl">{f.icon}</div>
+					<div class="mt-2 text-sm font-semibold text-white">{f.title}</div>
+					<div class="mt-1 text-xs leading-snug text-violet-200/60">{f.text}</div>
+				</div>
+			{/each}
 		</div>
-		
-		<button 
-			onclick={onStart}
-			class="bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 
-			       text-white font-bold py-4 px-8 rounded-lg text-xl transition-all duration-300 
-			       transform hover:scale-105 hover:shadow-2xl shadow-lg"
-		>
-			BEGIN THE CONFUSION
-		</button>
-		
-		<div class="mt-8 text-xs text-gray-500">
-			Warning: This game may cause temporary disorientation and existential questioning
+
+		<div class="mt-12 flex flex-col items-center gap-4">
+			<button onclick={onStart} class="btn-primary text-lg">Begin the confusion →</button>
+			<p class="text-xs text-violet-200/50">
+				Press <kbd class="rounded border border-white/20 px-1.5 py-0.5 font-mono">Enter</kbd> to start
+			</p>
+			{#if best > 0}
+				<p class="glass rounded-full px-4 py-1.5 text-sm text-amber-300">🏆 Best score {best.toLocaleString()}</p>
+			{/if}
 		</div>
 	</div>
-	
-	<!-- Floating particles effect -->
-	<div class="absolute inset-0 overflow-hidden pointer-events-none">
-		{#each Array(20) as _, i}
-			<div 
-				class="absolute w-2 h-2 bg-white rounded-full opacity-20 animate-pulse"
-				style="left: {Math.random() * 100}%; top: {Math.random() * 100}%; animation-delay: {Math.random() * 2}s;"
-			></div>
-		{/each}
-	</div>
-</div>
+</section>

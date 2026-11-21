@@ -3,6 +3,7 @@ export interface Challenge {
 	type: string;
 	question: string;
 	correctAnswer: string | number;
+	acceptable?: string[];
 	options?: string[];
 	word?: string;
 	color?: string;
@@ -191,6 +192,9 @@ const paradoxChallenges: Challenge[] = [
 	}
 ];
 
+import { moreChallenges } from './moreChallenges';
+import { generateChallenge } from './generators';
+
 // Memory confusion challenges
 const memoryChallenges: Challenge[] = [
 	{
@@ -200,14 +204,6 @@ const memoryChallenges: Challenge[] = [
 		correctAnswer: 1, // 9 letters: C-O-N-F-U-S-I-O-N
 		trap: 'Count carefully!',
 		difficulty: 'easy'
-	},
-	{
-		type: 'memory-trap',
-		question: 'What color was the previous challenge button?',
-		options: ['Red', 'Blue', 'Green', 'I don\'t remember'],
-		correctAnswer: 3, // This requires memory from previous challenge
-		trap: 'Were you paying attention?',
-		difficulty: 'medium'
 	}
 ];
 
@@ -218,7 +214,8 @@ export const allChallenges: Challenge[] = [
 	...patternChallenges,
 	...wordTrapChallenges,
 	...paradoxChallenges,
-	...memoryChallenges
+	...memoryChallenges,
+	...moreChallenges
 ];
 
 // Helper functions
@@ -255,4 +252,30 @@ export function shuffleChallenges(challenges: Challenge[]): Challenge[] {
 		[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
 	}
 	return shuffled;
+}
+
+const rank = { easy: 0, medium: 1, hard: 2 } as const;
+
+/**
+ * Pick a challenge for the given difficulty: roughly half freshly generated,
+ * half hand-written. Harder levels also include everything easier.
+ * `avoid` is a key of a challenge that must not be returned (the previous one).
+ */
+export function pickChallenge(difficulty: 'easy' | 'medium' | 'hard', avoid = ''): Challenge {
+	const key = challengeKey;
+	for (let i = 0; i < 8; i++) {
+		let c: Challenge;
+		if (Math.random() < 0.5) {
+			c = generateChallenge(difficulty);
+		} else {
+			const pool = allChallenges.filter((x) => rank[x.difficulty ?? 'easy'] <= rank[difficulty]);
+			c = pool[Math.floor(Math.random() * pool.length)];
+		}
+		if (key(c) !== avoid) return c;
+	}
+	return generateChallenge(difficulty);
+}
+
+export function challengeKey(c: Challenge): string {
+	return `${c.type}|${c.question}|${c.word ?? ''}|${c.pattern?.join('') ?? ''}`;
 }

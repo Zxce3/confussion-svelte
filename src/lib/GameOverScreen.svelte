@@ -1,107 +1,65 @@
 <script lang="ts">
-	let { score, level, onRestart }: {
+	let { score, level, best, isNewBest, onRestart }: {
 		score: number;
 		level: number;
+		best: number;
+		isNewBest: boolean;
 		onRestart: () => void;
 	} = $props();
-	
-	let confusionRating = $derived(
-		score < 500 ? "Mildly Bewildered" :
-		score < 1000 ? "Thoroughly Perplexed" : 
-		score < 2000 ? "Completely Baffled" :
-		score < 3000 ? "Utterly Discombobulated" :
-		"Eternally Confused Master"
+
+	let rating = $derived(
+		score < 500 ? 'Mildly Bewildered' :
+		score < 1000 ? 'Thoroughly Perplexed' :
+		score < 2000 ? 'Completely Baffled' :
+		score < 3000 ? 'Utterly Discombobulated' :
+		'Eternally Confused Master'
 	);
-	
-	let encouragement = $derived.by(() => {
-		const messages = [
-			"Your brain fought valiantly against the confusion!",
-			"Reality bent around you, but you persevered!",
-			"The confusion consumed you, but wisdom was gained!",
-			"In confusion, we find clarity... or do we?",
-			"You've graduated from the University of Bewilderment!",
-			"The maze of minds has claimed another soul!",
-			"Confusion is just another word for learning!",
-			"You've earned a PhD in Perplexity!"
-		];
-		return messages[Math.floor(Math.random() * messages.length)];
-	});
-	
-	let glitchText = $state(false);
-	
-	$effect(() => {
-		const interval = setInterval(() => {
-			glitchText = true;
-			setTimeout(() => glitchText = false, 300);
-		}, 2000);
-		
-		return () => clearInterval(interval);
-	});
+
+	const quotes = [
+		'Your brain fought valiantly against the confusion!',
+		'Reality bent around you, but you persevered!',
+		'In confusion, we find clarity... or do we?',
+		'Confusion is just another word for learning!',
+		'You\'ve earned a PhD in Perplexity!'
+	];
+	const quote = quotes[Math.floor(Math.random() * quotes.length)];
 </script>
 
-<div class="flex flex-col items-center justify-center min-h-screen text-white p-8">
-	<div class="text-center max-w-2xl">
-		<h1 class="text-6xl md:text-8xl font-bold mb-8 {glitchText ? 'text-red-500 animate-pulse' : 'text-transparent bg-clip-text bg-linear-to-r from-red-400 to-pink-600'}">
-			GAME OVER
+<svelte:window onkeydown={(e) => e.key === 'Enter' && onRestart()} />
+
+<section class="flex min-h-dvh flex-col items-center justify-center px-5 py-12 text-center">
+	<div class="animate-rise w-full max-w-md">
+		<h1 class="font-display text-5xl font-bold tracking-tight sm:text-7xl">
+			<span class="animate-glitch inline-block bg-linear-to-r from-rose-400 to-fuchsia-500 bg-clip-text text-transparent">Game over</span>
 		</h1>
-		
-		<div class="bg-black/50 rounded-lg p-8 mb-8">
-			<h2 class="text-3xl font-bold mb-6 text-yellow-400">Confusion Report</h2>
-			
-			<div class="space-y-4 text-lg">
-				<div class="flex justify-between items-center">
-					<span>Final Score:</span>
-					<span class="text-green-400 font-bold text-2xl">{score.toLocaleString()}</span>
+		<p class="mt-3 text-violet-200/60">{rating}</p>
+
+		<div class="glass mt-8 rounded-3xl p-6 text-left">
+			{#if isNewBest}
+				<div class="animate-pop mb-4 rounded-xl bg-amber-400/15 px-4 py-2 text-center text-sm font-semibold text-amber-300">
+					🏆 New personal best!
 				</div>
-				
-				<div class="flex justify-between items-center">
-					<span>Levels Survived:</span>
-					<span class="text-blue-400 font-bold text-2xl">{level}</span>
+			{/if}
+			<div class="grid grid-cols-2 gap-4">
+				<div>
+					<div class="text-xs tracking-wider text-violet-200/50 uppercase">Score</div>
+					<div class="font-display text-4xl font-bold text-emerald-300 tabular-nums">{score.toLocaleString()}</div>
 				</div>
-				
-				<div class="flex justify-between items-center">
-					<span>Confusion Rating:</span>
-					<span class="text-purple-400 font-bold">{confusionRating}</span>
-				</div>
-				
-				<div class="border-t border-gray-600 pt-4 mt-6">
-					<p class="text-gray-300 italic">{encouragement}</p>
+				<div>
+					<div class="text-xs tracking-wider text-violet-200/50 uppercase">Level reached</div>
+					<div class="font-display text-4xl font-bold text-sky-300 tabular-nums">{level}</div>
 				</div>
 			</div>
-		</div>
-		
-		<div class="space-y-4 mb-8">
-			<div class="grid grid-cols-2 gap-4 text-sm text-gray-400">
-				<div>🧠 Mind = Blown</div>
-				<div>🌀 Reality = Questioned</div>
-				<div>⚡ Neurons = Fired</div>
-				<div>🎯 Logic = Defied</div>
+			<div class="mt-5 flex items-center justify-between border-t border-white/10 pt-4 text-sm">
+				<span class="text-violet-200/60">Best score</span>
+				<span class="font-semibold text-amber-300 tabular-nums">{best.toLocaleString()}</span>
 			</div>
+			<p class="mt-4 text-sm text-violet-100/60 italic">"{quote}"</p>
 		</div>
-		
-		<button 
-			onclick={onRestart}
-			class="bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 
-			       text-white font-bold py-4 px-8 rounded-lg text-xl transition-all duration-300 
-			       transform hover:scale-105 hover:shadow-2xl shadow-lg mb-4"
-		>
-			EMBRACE THE CONFUSION AGAIN
-		</button>
-		
-		<p class="text-xs text-gray-500">
-			"The only true wisdom is in knowing you know nothing... especially here."
+
+		<button onclick={onRestart} class="btn-primary mt-8 text-lg">Embrace the confusion again</button>
+		<p class="mt-3 text-xs text-violet-200/50">
+			Press <kbd class="rounded border border-white/20 px-1.5 py-0.5 font-mono">Enter</kbd> to retry
 		</p>
 	</div>
-	
-	<!-- Falling confusion particles -->
-	<div class="absolute inset-0 overflow-hidden pointer-events-none">
-		{#each Array(30) as _, i}
-			<div 
-				class="absolute text-2xl opacity-30 animate-bounce"
-				style="left: {Math.random() * 100}%; top: -10%; animation-delay: {Math.random() * 5}s; animation-duration: {3 + Math.random() * 3}s;"
-			>
-				{['🤔', '😵', '🤯', '😵‍💫', '🧠', '❓', '❗', '💭', '🌀'][Math.floor(Math.random() * 9)]}
-			</div>
-		{/each}
-	</div>
-</div>
+</section>

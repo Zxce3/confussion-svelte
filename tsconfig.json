@@ -1,5 +1,6 @@
 {
 	"extends": "$app/tsconfig",
+	"exclude": ["build", "node_modules", "src/service-worker"],
 	"compilerOptions": {
 		"allowJs": true,
 		"checkJs": true,
